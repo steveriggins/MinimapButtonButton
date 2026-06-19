@@ -36,8 +36,30 @@ local options;
 local buttonContainer;
 local mainButton;
 local logo;
+local filterBox;
+local noMatchLabel;
+local filterText = '';
 local collectedButtonMap = {};
 local collectedButtons = {};
+
+--##############################################################################
+-- filtering
+--##############################################################################
+
+local function getFilterText ()
+  return filterText;
+end
+
+local function passesFilter (button)
+  if (filterText == '') then return true; end
+  local name = strlower(button:GetName() or '');
+  for word in gmatch(filterText, '%S+') do
+    if (not strfind(name, strlower(word), 1, true)) then
+      return false;
+    end
+  end
+  return true;
+end
 
 --##############################################################################
 -- minimap button collecting
@@ -431,6 +453,78 @@ local function initButtonContainer ()
   buttonContainer:SetScript('OnLeave', checkButtonHover);
 end
 
+local function initFilterBox ()
+  local PADDING = 4;
+
+  filterBox = _G.CreateFrame('EditBox', addonName .. 'FilterBox', buttonContainer,
+      _G.BackdropTemplateMixin and 'BackdropTemplate');
+  filterBox:SetHeight(Constants.FILTER_AREA_HEIGHT - PADDING * 2);
+  filterBox:SetPoint(anchors.TOPLEFT, buttonContainer, anchors.TOPLEFT, PADDING, -PADDING);
+  filterBox:SetPoint(anchors.TOPRIGHT, buttonContainer, anchors.TOPRIGHT, -PADDING, -PADDING);
+  filterBox:SetFontObject(_G.GameFontHighlight);
+  filterBox:SetTextInsets(4, 4, 0, 0);
+  filterBox:SetAutoFocus(false);
+  filterBox:SetMaxLetters(64);
+  filterBox:EnableMouse(true);
+  filterBox:SetFrameLevel(Constants.FRAME_LEVEL + 1);
+
+  if (filterBox.SetBackdrop) then
+    filterBox:SetBackdrop({
+      bgFile = 'Interface/Tooltips/UI-Tooltip-Background',
+      edgeFile = 'Interface/Tooltips/UI-Tooltip-Border',
+      edgeSize = 8,
+      insets = { left = 2, right = 2, top = 2, bottom = 2 },
+    });
+    filterBox:SetBackdropColor(0, 0, 0, 0.5);
+  end
+
+  local placeholder = filterBox:CreateFontString(nil, 'OVERLAY');
+  placeholder:SetPoint(anchors.LEFT, filterBox, anchors.LEFT, 6, 0);
+  placeholder:SetPoint(anchors.RIGHT, filterBox, anchors.RIGHT, -4, 0);
+  local fontPath, fontSize = _G.GameFontHighlight:GetFont();
+  placeholder:SetFont(fontPath, fontSize);
+  placeholder:SetTextColor(0.6, 0.6, 0.6, 1);
+  placeholder:SetJustifyH('LEFT');
+  placeholder:SetText('Filter');
+
+  filterBox:SetScript('OnTextChanged', function (self)
+    filterText = self:GetText();
+    if (filterText == '') then
+      placeholder:Show();
+    else
+      placeholder:Hide();
+    end
+    Layout.updateLayout();
+  end);
+
+  filterBox:SetScript('OnEditFocusGained', function ()
+    placeholder:Hide();
+  end);
+
+  filterBox:SetScript('OnEditFocusLost', function (self)
+    if (self:GetText() == '') then
+      placeholder:Show();
+    end
+  end);
+
+  filterBox:SetScript('OnEscapePressed', function (self)
+    self:SetText('');
+    self:ClearFocus();
+  end);
+
+  filterBox:SetScript('OnEnterPressed', function (self)
+    self:ClearFocus();
+  end);
+
+  noMatchLabel = buttonContainer:CreateFontString(nil, 'OVERLAY', 'GameFontNormal');
+  noMatchLabel:SetText('No buttons match this filter');
+  noMatchLabel:SetPoint(anchors.TOPLEFT, buttonContainer, anchors.TOPLEFT,
+      PADDING, -(Constants.FILTER_AREA_HEIGHT + PADDING));
+  noMatchLabel:SetPoint(anchors.TOPRIGHT, buttonContainer, anchors.TOPRIGHT,
+      -PADDING, -(Constants.FILTER_AREA_HEIGHT + PADDING));
+  noMatchLabel:Hide();
+end
+
 local function initLogo ()
   logo = mainButton:CreateTexture(nil, 'ARTWORK');
   logo:SetTexture('Interface\\AddOns\\' .. addonName ..
@@ -443,6 +537,7 @@ end
 local function initFrames ()
   initMainButton();
   initButtonContainer();
+  initFilterBox();
   initLogo();
 end
 
@@ -564,6 +659,9 @@ addon.export('Logic/Main', {
   mainButton = mainButton,
   logo = logo,
   collectedButtons = collectedButtons,
+  noMatchLabel = noMatchLabel,
+  passesFilter = passesFilter,
+  getFilterText = getFilterText,
   resetPosition = resetPosition,
   applyScale = applyScale,
   hideButtons = hideButtons,
