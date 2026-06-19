@@ -29,7 +29,7 @@ function GridLayout:applyFilterVisibility ()
   for _, button in ipairs(Main.collectedButtons) do
     if (button:IsShown()) then
       local passes = (not filterActive) or Main.passesFilter(button);
-      button:SetAlpha(passes and 1 or 0);
+      button:SetAlpha(passes and 1 or Constants.FILTER_DIMMED_ALPHA);
       if (passes) then anyVisible = true; end
     end
   end
