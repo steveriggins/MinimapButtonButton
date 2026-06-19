@@ -456,64 +456,33 @@ end
 local function initFilterBox ()
   local PADDING = 4;
 
+  -- SearchBoxTemplate provides the input border, the magnifying-glass icon, the
+  -- instruction (placeholder) text, and the standard clear button, all managed
+  -- by Blizzard's SearchBoxTemplateMixin.
+  -- InputBoxTemplate (inherited by SearchBoxTemplate) anchors its left border
+  -- texture 5px outside the frame's left edge, so offset the left anchor by that
+  -- overhang to keep the visible border inside the window.
+  local BORDER_OVERHANG = 5;
+
   filterBox = _G.CreateFrame('EditBox', addonName .. 'FilterBox', buttonContainer,
-      _G.BackdropTemplateMixin and 'BackdropTemplate');
+      'SearchBoxTemplate');
   filterBox:SetHeight(Constants.FILTER_AREA_HEIGHT - PADDING * 2);
-  filterBox:SetPoint(anchors.TOPLEFT, buttonContainer, anchors.TOPLEFT, PADDING, -PADDING);
+  filterBox:SetPoint(anchors.TOPLEFT, buttonContainer, anchors.TOPLEFT,
+      PADDING + BORDER_OVERHANG, -PADDING);
   filterBox:SetPoint(anchors.TOPRIGHT, buttonContainer, anchors.TOPRIGHT, -PADDING, -PADDING);
-  filterBox:SetFontObject(_G.GameFontHighlight);
-  filterBox:SetTextInsets(4, 4, 0, 0);
   filterBox:SetAutoFocus(false);
   filterBox:SetMaxLetters(64);
-  filterBox:EnableMouse(true);
   filterBox:SetFrameLevel(Constants.FRAME_LEVEL + 1);
 
-  if (filterBox.SetBackdrop) then
-    filterBox:SetBackdrop({
-      bgFile = 'Interface/Tooltips/UI-Tooltip-Background',
-      edgeFile = 'Interface/Tooltips/UI-Tooltip-Border',
-      edgeSize = 8,
-      insets = { left = 2, right = 2, top = 2, bottom = 2 },
-    });
-    filterBox:SetBackdropColor(0, 0, 0, 0.5);
+  if (filterBox.Instructions) then
+    filterBox.Instructions:SetText('Filter');
   end
 
-  local placeholder = filterBox:CreateFontString(nil, 'OVERLAY');
-  placeholder:SetPoint(anchors.LEFT, filterBox, anchors.LEFT, 6, 0);
-  placeholder:SetPoint(anchors.RIGHT, filterBox, anchors.RIGHT, -4, 0);
-  local fontPath, fontSize = _G.GameFontHighlight:GetFont();
-  placeholder:SetFont(fontPath, fontSize);
-  placeholder:SetTextColor(0.6, 0.6, 0.6, 1);
-  placeholder:SetJustifyH('LEFT');
-  placeholder:SetText('Filter');
-
-  filterBox:SetScript('OnTextChanged', function (self)
+  -- Hooking instead of overriding so the template keeps managing the icon,
+  -- instruction text, and clear button.
+  filterBox:HookScript('OnTextChanged', function (self)
     filterText = self:GetText();
-    if (filterText == '') then
-      placeholder:Show();
-    else
-      placeholder:Hide();
-    end
     Layout.updateLayout();
-  end);
-
-  filterBox:SetScript('OnEditFocusGained', function ()
-    placeholder:Hide();
-  end);
-
-  filterBox:SetScript('OnEditFocusLost', function (self)
-    if (self:GetText() == '') then
-      placeholder:Show();
-    end
-  end);
-
-  filterBox:SetScript('OnEscapePressed', function (self)
-    self:SetText('');
-    self:ClearFocus();
-  end);
-
-  filterBox:SetScript('OnEnterPressed', function (self)
-    self:ClearFocus();
   end);
 
   noMatchLabel = buttonContainer:CreateFontString(nil, 'OVERLAY', 'GameFontNormal');
