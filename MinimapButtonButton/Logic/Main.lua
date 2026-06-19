@@ -518,10 +518,14 @@ local function initFilterBox ()
 
   noMatchLabel = buttonContainer:CreateFontString(nil, 'OVERLAY', 'GameFontNormal');
   noMatchLabel:SetText('No buttons match this filter');
-  noMatchLabel:SetPoint(anchors.TOPLEFT, buttonContainer, anchors.TOPLEFT,
-      PADDING, -(Constants.FILTER_AREA_HEIGHT + PADDING));
-  noMatchLabel:SetPoint(anchors.TOPRIGHT, buttonContainer, anchors.TOPRIGHT,
-      -PADDING, -(Constants.FILTER_AREA_HEIGHT + PADDING));
+  noMatchLabel:SetJustifyH('CENTER');
+  noMatchLabel:SetJustifyV('MIDDLE');
+  -- Centering within the button area below the filter box: the container center
+  -- is shifted down by half the filter area height to account for that top inset.
+  noMatchLabel:SetPoint(anchors.LEFT, buttonContainer, anchors.LEFT,
+      PADDING, -Constants.FILTER_AREA_HEIGHT / 2);
+  noMatchLabel:SetPoint(anchors.RIGHT, buttonContainer, anchors.RIGHT,
+      -PADDING, -Constants.FILTER_AREA_HEIGHT / 2);
   noMatchLabel:Hide();
 end
 
